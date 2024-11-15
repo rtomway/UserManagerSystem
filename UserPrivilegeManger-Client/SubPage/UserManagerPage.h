@@ -3,7 +3,7 @@
 
 #include<QWidget>
 #include<QStandardItemModel>
-#include "UserDetailsDlg.h"
+#include "PersonMessage.h"
 #include "UseraddDlg.h"
 #include <QMenu>
 
@@ -25,6 +25,9 @@ public:
 	void initMenu();
 public:
 	void onPopUpPosition(QMenu*menu);
+	QJsonObject rowMessage(const QString& user_id);
+public slots:
+	void personCenter(const QString& user_id);
 private:
 	void parseJson(const QJsonObject& obj);
 	void ontableviewResize();
@@ -36,7 +39,7 @@ private:
 	int column(const QString& fieldName);
 	QList<QStandardItem*>ItemsFromJsonObject(const QJsonObject& juser);
 
-	UserDetailsDlg* m_detailsDlg{};
+	PersonMessage* m_detailsDlg{};
 	UseraddDlg* m_userAddDlg{};
 
 	QMenu* m_setMenu{};

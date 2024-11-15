@@ -9,6 +9,7 @@
 
 #include "UserManagerPage.h"
 #include "PManagerPage.h"
+#include "PersonCenterPage.h"
 
 class Mainwindow :public QWidget
 {
@@ -29,6 +30,8 @@ private:
 	PManagerPage* m_pManagerpage{};
 	void initPManagerPage();
 
+	PersonCenterPage* m_personCenter{};
+	void initPersonCenter();
 
 	QPropertyAnimation* m_proAnimation{};
 	QPropertyAnimation* m_MiddenAnimation{};
@@ -36,6 +39,8 @@ private:
 	bool m_treeIsHidden{false};
 	QPushButton* m_hideBtn{};
 	void updateBtnSize();
+signals:
+	void Personcenter(const QString &user_id);
 protected:
 	void resizeEvent(QResizeEvent*ev)override;
 };

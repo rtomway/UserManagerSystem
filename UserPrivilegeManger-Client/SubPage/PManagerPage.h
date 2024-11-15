@@ -23,10 +23,13 @@ public:
 	void onBatchDelete();
 private:
 	void parseJson(const QJsonObject& obj);
+	void ontableViewsize();
+protected:
+	void resizeEvent(QResizeEvent* ev)override;
 private:
 	Ui::PManagerPage* ui{};
 	QStandardItemModel* m_model{};
-	QStringList m_fieldName = {"user_id","username","privilege_read","privilege_edit","privilege_add","privilege_delete"};
+	QStringList m_fieldName = {"user_id","username","privilege_edit","privilege_add","privilege_delete"};
 	int column(const QString& field);
 	QList<QStandardItem*> ItemsFromJsonObject(const QJsonObject& jobj);
 

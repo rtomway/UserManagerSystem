@@ -2,6 +2,7 @@
 #include "UserManagerPage.h"
 #include "UserManagerPage.h"
 #include "UserManagerPage.h"
+#include "UserManagerPage.h"
 #include "ui_UserManagerPage.h"
 #include "SHttpClient.h"
 #include "SApp.h"
@@ -14,7 +15,7 @@
 #include "SSwitchDelegate.h"
 #include "SButtonDelegate.h"
 
-#include "UserDetailsDlg.h"
+#include "PersonMessage.h"
 #include "UseraddDlg.h"
 #include "SMaskWidget.h"
 
@@ -49,6 +50,7 @@ UserManagerPage::~UserManagerPage()
 
 void UserManagerPage::init()
 {
+	
 	QFile file(":/ResourceClient/style.css");
 	if (file.open(QIODevice::ReadOnly))
 	{
@@ -193,8 +195,8 @@ void UserManagerPage::init()
 		{
 			if (!m_detailsDlg)
 			{
-				m_detailsDlg = new UserDetailsDlg(this);
-				connect(m_detailsDlg, &UserDetailsDlg::userChanged, [=](const QJsonObject& user)
+				m_detailsDlg = new PersonMessage(this);
+				connect(m_detailsDlg, &PersonMessage::userChanged, [=](const QJsonObject& user)
 					{
 						m_model->item(index.row(), column("user_id"))->setText(user.value("user_id").toString());
 						m_model->item(index.row(), column("username"))->setText(user.value("username").toString());
@@ -205,13 +207,13 @@ void UserManagerPage::init()
 					});
 			}
 			//this->nativeParentWidget()->hide();
-			connect(m_detailsDlg, &UserDetailsDlg::setshow, [=]
+			connect(m_detailsDlg, &PersonMessage::setshow, [=]
 				{
 					m_detailsDlg->hide();
 					//onSearch();
 					//this->nativeParentWidget()->show();
 				});
-			connect(m_detailsDlg, &UserDetailsDlg::userDeleted, [=](QJsonObject& user)
+			connect(m_detailsDlg, &PersonMessage::userDeleted, [=](QJsonObject& user)
 				{
 					auto items = m_model->findItems(user.value("user_id").toString(), Qt::MatchFlag::MatchExactly);
 					if (!items.isEmpty())
@@ -228,6 +230,7 @@ void UserManagerPage::init()
 			juser.insert("mobile", m_model->item(index.row(), column("mobile"))->text());
 			juser.insert("email", m_model->item(index.row(), column("email"))->text());
 			juser.insert("isEnable", m_model->item(index.row(), column("isEnable"))->data(Qt::UserRole).toBool()); 
+			qDebug() << "aaaaaaaaaa" << m_model->item(index.row(), column("isEnable"))->data(Qt::UserRole);
 			m_detailsDlg->setUser(juser);
 			m_detailsDlg->resize(this->size());
 			m_detailsDlg->show();
@@ -330,6 +333,7 @@ void UserManagerPage::initAddMenu()
 
 void UserManagerPage::onSearch()
 {
+	
 	QVariantMap params;
 	params.insert("isDeleted",false);
 	auto filter = ui->searchEdit->text();
@@ -351,6 +355,7 @@ void UserManagerPage::onSearch()
 				}
 				parseJson(jdom.object());
 			}).get();
+	
 }
 
 void UserManagerPage::setBatchEnable(bool enable)
@@ -485,6 +490,64 @@ void UserManagerPage::onPopUpPosition(QMenu* popPosionMenu)
 			left->setIcon(QIcon());
 		});
 
+}
+
+QJsonObject UserManagerPage::rowMessage(const QString& user_id)
+{
+	QJsonObject juser;
+	int row = 0;
+	for (int i = 0; i < m_model->rowCount(); i++)
+	{
+		if (user_id == m_model->item(i, column("user_id"))->text())
+		{
+			row = i;
+			break;
+		}
+	}
+	juser.insert("user_id", m_model->item(row, column("user_id"))->text());
+	juser.insert("username", m_model->item(row, column("username"))->text());
+	juser.insert("gender", m_model->item(row, column("gender"))->text());
+	juser.insert("mobile", m_model->item(row, column("mobile"))->text());
+	juser.insert("email", m_model->item(row, column("email"))->text());
+	juser.insert("isEnable", m_model->item(row, column("isEnable"))->data(Qt::UserRole).toBool());
+	return juser;
+}
+void UserManagerPage::personCenter(const QString& user_id)
+{
+	auto juser=rowMessage(user_id);
+	if (!m_detailsDlg)
+	{
+		m_detailsDlg = new PersonMessage(this);
+		connect(m_detailsDlg, &PersonMessage::userChanged, [=](const QJsonObject& user)
+			{
+				/*m_model->item(index.row(), column("user_id"))->setText(user.value("user_id").toString());
+				m_model->item(index.row(), column("username"))->setText(user.value("username").toString());
+				m_model->item(index.row(), column("gender"))->setText(user.value("gender").toInt() == 1 ? "男" : user.value("gender").toInt() == 2 ? "女" : "未知");
+				m_model->item(index.row(), column("mobile"))->setText(user.value("mobile").toString());
+				m_model->item(index.row(), column("email"))->setText(user.value("email").toString());
+				m_model->item(index.row(), column("isEnable"))->setData(user.value("isEnable").toBool(), Qt::UserRole);*/
+			});
+	}
+	//this->nativeParentWidget()->hide();
+	connect(m_detailsDlg, &PersonMessage::setshow, [=]
+		{
+			m_detailsDlg->hide();
+			onSearch();
+			this->nativeParentWidget()->show();
+		});
+	connect(m_detailsDlg, &PersonMessage::userDeleted, [=](QJsonObject& user)
+		{
+			auto items = m_model->findItems(user.value("user_id").toString(), Qt::MatchFlag::MatchExactly);
+			if (!items.isEmpty())
+			{
+				auto row = items.first()->row();
+				m_model->removeRow(row);
+			}
+		});
+
+	m_detailsDlg->setUser(juser);
+	m_detailsDlg->resize(this->size());
+	m_detailsDlg->show();
 }
 
 void UserManagerPage::parseJson(const QJsonObject& obj)
@@ -747,7 +810,7 @@ void UserManagerPage::writeCsv(const QString& filename)
 	}
 	QTextStream stream(&file);
 	//写表头
-	for (size_t i = 1; i < m_model->columnCount() - 1; i++)
+	for (size_t i = 1; i < m_model->columnCount()-1 ; i++)//去除操作栏
 	{
 		stream << m_model->horizontalHeaderItem(i)->text();
 		if (i < m_model->columnCount() - 2)
@@ -759,7 +822,7 @@ void UserManagerPage::writeCsv(const QString& filename)
 	//写数据
 	for (int r = 0; r < m_model->rowCount(); r++)
 	{
-		for (int c = 1; c < m_model->columnCount() - 1; c++)
+		for (int c = 1; c < m_model->columnCount()-1 ; c++)
 		{
 			auto item = m_model->item(r, c);
 			if (item)
@@ -777,14 +840,14 @@ void UserManagerPage::writeXlsx(const QString& filename)
 	Document doc(filename);
 	Worksheet* sheet = doc.currentWorksheet();
 	//写表头
-	for (size_t i = 1; i < m_model->columnCount()-1; i++)
+	for (size_t i = 1; i < m_model->columnCount()-1; i++)  
 	{
 		sheet->write(1,i,m_model->horizontalHeaderItem(i)->text());
 	}
 	//写数据
 	for (size_t r = 0; r < m_model->rowCount(); r++)
 	{
-		for (size_t c = 1; c < m_model->columnCount() - 1; c++)
+		for (size_t c = 1; c < m_model->columnCount()-1; c++)
 		{
 			auto item = m_model->item(r, c);
 			if (item)

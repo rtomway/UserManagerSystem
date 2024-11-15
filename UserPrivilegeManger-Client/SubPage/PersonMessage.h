@@ -1,5 +1,5 @@
-﻿#ifndef USERDETAILSDLG_H_
-#define USERDETAILSDLG_H_
+﻿#ifndef PERSONMESSAGE_H_
+#define PERSONMESSAGE_H_
 
 #include <QWidget>
 #include <QJsonObject>
@@ -9,14 +9,17 @@
 #include "SSwitchButton.h"
 #include "UsereditDlg.h"
 
-class UserDetailsDlg :public QWidget
+class PersonMessage :public QWidget
 {
 	Q_OBJECT
 public:
-	UserDetailsDlg(QWidget* parent = nullptr);
+	PersonMessage(QWidget* parent = nullptr);
 	void init();
-
 	void setUser(const QJsonObject& user);
+private:
+	QWidget* m_leftLayout{};
+public:
+	QWidget* leftLayout()const;
 signals:
 	void userChanged(const QJsonObject&user);
 protected://slots
@@ -39,4 +42,4 @@ private:
 	UsereditDlg* m_userEditDlg{};
 };
 
-#endif // !USERDETAILSDLG_H_
+#endif // !PERSONMESSAGE_H_

@@ -1,4 +1,4 @@
-﻿#include "UserDetailsDlg.h"
+﻿#include "PersonMessage.h"
 #include <QBoxLayout>
 #include <QLabel>
 #include <QFormLayout>
@@ -13,13 +13,14 @@
 #include "SMaskWidget.h"
 #include <QDebug>
 
-UserDetailsDlg::UserDetailsDlg(QWidget* parent)
+PersonMessage::PersonMessage(QWidget* parent)
 	:QWidget(parent)
+	,m_leftLayout(new QWidget)
 {
 	init();
 }
 
-void UserDetailsDlg::init()
+void PersonMessage::init()
 {
 	//本身背景样式
 	this->setAttribute(Qt::WA_StyledBackground);
@@ -35,18 +36,19 @@ void UserDetailsDlg::init()
 				}
 			)");
 	auto thlayout = new QHBoxLayout(this);
-	auto mmlayout= new QVBoxLayout;
-	thlayout->addLayout(mmlayout);
-	thlayout->addStretch(0);
-	auto mlayout = new QVBoxLayout;
-	thlayout->addLayout(mlayout);
-	thlayout->addStretch();
+	//auto mmlayout= new QVBoxLayout;
+	thlayout->addWidget(leftLayout());
+	//thlayout->addStretch(0);
+	auto rightLatout = new QWidget;
+	auto mlayout = new QVBoxLayout(rightLatout);
+	thlayout->addWidget(rightLatout);
+	//thlayout->addStretch();
 
-	m_backBtn = new QPushButton("返回");
-	m_backBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	//m_backBtn->setFixedSize(60, 25);
-	mmlayout->addWidget(m_backBtn);
-	mmlayout->addStretch();
+	//m_backBtn = new QPushButton("返回");
+	//m_backBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	////m_backBtn->setFixedSize(60, 25);
+	//mmlayout->addWidget(m_backBtn);
+	//mmlayout->addStretch();
 
 	auto baseInfoBtn = new QPushButton("编辑基本信息");
 	auto resetPasswordBtn = new QPushButton("重置密码");
@@ -112,14 +114,12 @@ void UserDetailsDlg::init()
 		mlayout->addLayout(hlayout);
 		mlayout->addStretch();
 	
-		
-		
 	
-	connect(m_backBtn, &QPushButton::clicked, [=]
+	/*connect(m_backBtn, &QPushButton::clicked, [=]
 		{
 			emit setshow();
-		});
-	connect(avatarAlterBtn, &QPushButton::clicked, this, &UserDetailsDlg::onAvatarUpload);
+		});*/
+	connect(avatarAlterBtn, &QPushButton::clicked, this, &PersonMessage::onAvatarUpload);
 	connect(m_isEnable_btn, &SSwitchButton::stateChanged, [=](bool state)
 		{
 			SHttpClient(URL("/api/user/alter?user_id="+m_juser.value("user_id").toString())).debug(true)
@@ -141,7 +141,9 @@ void UserDetailsDlg::init()
 						{
 							if (jdom["code"].toInt() == 0)
 							{
+								qDebug() << "1111111111111111"<<m_juser;
 								m_juser.insert("isEnable", state);
+								qDebug() << "00000000000000000" << m_juser;
 								emit userChanged(m_juser);
 							}
 							
@@ -191,7 +193,7 @@ void UserDetailsDlg::init()
 		});
 }
 
-void UserDetailsDlg::setUser(const QJsonObject& user)
+void PersonMessage::setUser(const QJsonObject& user)
 {
 	
 	m_juser = user;
@@ -204,8 +206,14 @@ void UserDetailsDlg::setUser(const QJsonObject& user)
 	onAvatarDownload();
 }
 
+QWidget* PersonMessage::leftLayout() const
+{
 
-void UserDetailsDlg::onAvatarDownload()
+	return m_leftLayout;
+}
+
+
+void PersonMessage::onAvatarDownload()
 {
 	SHttpClient(URL("/api/user/avatar")).debug(true)
 		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
@@ -232,7 +240,7 @@ void UserDetailsDlg::onAvatarDownload()
 		.get();
 }
 
-void UserDetailsDlg::onAvatarUpload()
+void PersonMessage::onAvatarUpload()
 {
 	auto path=sApp->globalConfig()->value("other/select_avatar_path",
 		QStandardPaths::writableLocation(QStandardPaths::DesktopLocation)).toString();

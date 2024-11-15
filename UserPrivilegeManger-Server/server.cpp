@@ -367,32 +367,30 @@ void Server::userRoute()
 			CheckJsonParse(request);
 			QString update;
 			auto robj = jdom.object();
-			/*if (robj.contains("username"))
+			    if (robj.contains("username"))
 				update += QString("username='%1',").arg(robj.value("username").toString());
-			if (robj.contains("gender"))
+				if (robj.contains("gender"))
 				update += QString("gender='%1',").arg(robj.value("gender").toInt());
-			if (robj.contains("mobile"))
-				update += QString("mobile='%1',").arg(robj.value("mobile").toString());
-			if (robj.contains("email"))
-				update += QString("email='%1',").arg(robj.value("email").toString());
-			if (robj.contains("password"))
+				if(robj.contains("password"))
 				update += QString("password='%1',").arg(robj.value("password").toString());
-			if (robj.contains("isEnable"))
-				update += QString("isEnable='%1',").arg(robj.value("isEnable").toBool());*/
-
-		
-				update += QString("username='%1',").arg(robj.value("username").toString());
-				update += QString("gender='%1',").arg(robj.value("gender").toInt());
-				if (!robj.value("mobile").toString().isEmpty())
-					update += QString("mobile='%1',").arg(robj.value("mobile").toString());
-				else
-					update += QString("mobile=null,");
-				if(!robj.value("email").toString().isEmpty())
-				update += QString("email='%1',").arg(robj.value("email").toString());
-				else
-					update += QString("email=null,");
-				update += QString("password='%1',").arg(robj.value("password").toString());
+				if (robj.contains("isEnable"))
 				update += QString("isEnable='%1',").arg(robj.value("isEnable").toBool());
+				//数据库字段为空需要传NULL不能为空字符串
+				if (robj.contains("mobile"))
+				{
+					if (!robj.value("mobile").toString().isEmpty())
+						update += QString("mobile='%1',").arg(robj.value("mobile").toString());
+					else
+						update += QString("mobile=null,");
+				}
+				if (robj.contains("email"))
+				{
+					if (!robj.value("email").toString().isEmpty())
+						update += QString("email='%1',").arg(robj.value("email").toString());
+					else
+						update += QString("email=null,");
+				}
+				
 
 			update.chop(1);
 
@@ -635,7 +633,7 @@ void Server::privilegeRoute()
 			}
 
 
-			QString	sql = "select user_id,username,privilege_read,privilege_edit,privilege_add,privilege_delete,isDeleted from user_privilege ";
+			QString	sql = "select user_id,username,privilege_edit,privilege_add,privilege_delete,isDeleted from user_privilege ";
 			sql += filter;
 			sql += QString("limit %1,%2").arg((page - 1) * pageSize).arg(pageSize);
 

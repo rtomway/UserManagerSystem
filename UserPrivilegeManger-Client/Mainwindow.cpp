@@ -5,12 +5,16 @@
 
 #include "SMaskWidget.h"
 
+#include "SConfigFile.h"
+#include "SApp.h"
+#include "SHttpClient.h"
+
 #define HideBtn_width 20
 
 enum NavType {
 	NT_UserManger,
 	NT_RoleManger,
-	NT_PrivilegeManger
+	NT_PersonCenter
 };
 
 Mainwindow::Mainwindow(QWidget*parent)
@@ -24,11 +28,12 @@ void Mainwindow::init()
 	initMainwindow();
 	initUserManagerPage();
 	initPManagerPage();
+	initPersonCenter();
 }
 
 void Mainwindow::initMainwindow()
 {
-	this->resize(1000,650);
+	this->resize(1200,650);
 
 	m_navBar = new SNavBar;
 	m_treeNavBar = new QTreeWidget(this);
@@ -126,27 +131,30 @@ void Mainwindow::initMainwindow()
 	//item->setBackground(0, QBrush(QColor(57, 61, 72)));
 	m_treeNavBar->setHeaderItem(item);
 	//item
-	item = new QTreeWidgetItem(m_treeNavBar, { "用户管理" }, NT_UserManger);
-	item->setIcon(0,QIcon(":/ResourceClient/user.png"));
-	item->setSelected(true);
+	auto item1 = new QTreeWidgetItem(m_treeNavBar, { "用户管理" }, NT_UserManger);
+	item1->setIcon(0,QIcon(":/ResourceClient/user.png"));
+	item1->setSelected(true);
 	
-	item = new QTreeWidgetItem(m_treeNavBar, { "角色管理" }, NT_RoleManger);
-	item->setIcon(0, QIcon(":/ResourceClient/role.png"));
-	item = new QTreeWidgetItem(m_treeNavBar, { "权限管理" }, NT_PrivilegeManger);
-	item->setIcon(0, QIcon(":/ResourceClient/privilege.png"));
+	auto item2 = new QTreeWidgetItem(m_treeNavBar, { "角色管理" }, NT_RoleManger);
+	item2->setIcon(0, QIcon(":/ResourceClient/role.png"));
+	auto item3 = new QTreeWidgetItem(m_treeNavBar, { "个人中心" }, NT_PersonCenter);
+	item3->setIcon(0, QIcon(":/ResourceClient/privilege.png"));
+	
 	connect(m_treeNavBar, &QTreeWidget::itemClicked, [=](QTreeWidgetItem* item, int column)
 		{
 			switch (item->type())
 			{
 			case NT_UserManger:
 				m_stkWidget->setCurrentIndex(NT_UserManger);
+				//点击时刷新
+				m_userManagerpage->onSearch();
 				break;
 			case NT_RoleManger:
 				m_stkWidget->setCurrentIndex(NT_RoleManger);
 				m_pManagerpage->onSearch();
 				break;
-			case NT_PrivilegeManger:
-				m_stkWidget->setCurrentIndex(NT_PrivilegeManger);
+			case NT_PersonCenter:
+				m_stkWidget->setCurrentIndex(NT_PersonCenter);
 				break;
 			default:
 				break;
@@ -171,6 +179,40 @@ void Mainwindow::initPManagerPage()
 	m_pManagerpage = new PManagerPage;
 	m_stkWidget->addWidget(m_pManagerpage);
 }
+
+void Mainwindow::initPersonCenter()
+{
+	m_personCenter = new PersonCenterPage;
+
+	//获取个人信息
+	SHttpClient(URL("/api/user/list?user_id=" + sApp->globalConfig()->value("user/user_id").toString())).debug(true)
+		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+		.success([=](const QByteArray& data)
+			{
+				QJsonParseError error;
+				auto jdom = QJsonDocument::fromJson(data, &error);
+				if (error.error != QJsonParseError::NoError)
+				{
+					qWarning() << "失败";
+					return;
+				}
+				qDebug() << "+++++++++++++++++" << jdom;
+				auto jarray = jdom.object().value("data").toObject().value("lists").toArray();
+				QJsonObject juser=jarray.at(0).toObject();
+				juser.insert("user_id",juser.value("user_id").toString());
+				juser.insert("username", juser.value("username").toString());
+				juser.insert("gender", juser.value("gender").toInt()==1?"男":(juser.value("gender").toInt() == 2?"女":"未知"));
+				juser.insert("mobile", juser.value("mobile").toString());
+				juser.insert("email", juser.value("email").toString());
+				juser.insert("isEnable", juser.value("isEnable").toInt()==1?true:false);
+				qDebug() << "-----------------" << juser;
+				m_personCenter->setUser(juser);
+			}).get();
+	
+	m_stkWidget->addWidget(m_personCenter);
+	
+}
+
 
 void Mainwindow::updateBtnSize()
 {

@@ -1,4 +1,6 @@
 ﻿#include "PManagerPage.h"
+#include "PManagerPage.h"
+#include "PManagerPage.h"
 #include "ui_PManagerPage.h"
 
 #include "SApp.h"
@@ -12,7 +14,7 @@
 
 #include "SMaskWidget.h"
 #include "PAddEditDlg.h"
-#include "UserDetailsDlg.h"
+#include "PersonMessage.h"
 #include "UseraddDlg.h"
 #include "UserManagerPage.h"
 
@@ -42,7 +44,6 @@ void PManagerPage::init()
 {
 	SFieldTrandlate::instance()->addTrans("user_privilege/user_id", "用户ID");
 	SFieldTrandlate::instance()->addTrans("user_privilege/username", "用户名");
-	SFieldTrandlate::instance()->addTrans("user_privilege/privilege_read", "权限_登录");
 	SFieldTrandlate::instance()->addTrans("user_privilege/privilege_edit", "权限_编辑");
 	SFieldTrandlate::instance()->addTrans("user_privilege/privilege_add", "权限_添加");
 	SFieldTrandlate::instance()->addTrans("user_privilege/privilege_delete", "权限_删除");
@@ -71,7 +72,6 @@ void PManagerPage::init()
 	connect(ui->batchDeleteBtn, &QPushButton::clicked, this, &PManagerPage::onBatchDelete);
 
 	auto switchDelegate = new SSwitchDelegate(ui->tableView);
-	//ui->tableView->setItemDelegateForColumn(column("privilege_read"), switchDelegate);
 	ui->tableView->setItemDelegateForColumn(column("privilege_edit"), switchDelegate);
 	ui->tableView->setItemDelegateForColumn(column("privilege_add"), switchDelegate);
 	ui->tableView->setItemDelegateForColumn(column("privilege_delete"), switchDelegate);
@@ -161,6 +161,7 @@ void PManagerPage::onSearch()
 				parseJson(jdom.object());
 
 			}).get();
+	
 }
 
 void PManagerPage::onBatchDelete()
@@ -210,8 +211,26 @@ void PManagerPage::parseJson(const QJsonObject& obj)
 
 		m_model->appendRow(ItemsFromJsonObject(juser));
 	}
-	qDebug() <<"------"<< m_model->item(0, column("privilege_read"))->text();
+	ontableViewsize();
 
+}
+
+void PManagerPage::ontableViewsize()
+{
+	int columnCount = m_model->columnCount();
+	int totalWidth = ui->tableView->width()- 18;
+	if (columnCount > 0) {
+		int columnWidth = totalWidth / (columnCount);
+		for (int i = 0; i < columnCount; i++) {
+			ui->tableView->setColumnWidth(i, columnWidth);
+			ui->tableView->setRowHeight(i, 40);
+		}
+	}
+}
+
+void PManagerPage::resizeEvent(QResizeEvent* ev)
+{
+	ontableViewsize();
 }
 
 int PManagerPage::column(const QString& field)
@@ -225,7 +244,6 @@ int PManagerPage::column(const QString& field)
 
 QList<QStandardItem*> PManagerPage::ItemsFromJsonObject(const QJsonObject& jobj)
 {
-	auto privilege_read = jobj.value("privilege_read").toInt();
 	auto privilege_edit = jobj.value("privilege_edit").toInt();
 	auto privilege_add = jobj.value("privilege_add").toInt();
 	auto privilege_delete = jobj.value("privilege_delete").toInt();
@@ -234,13 +252,9 @@ QList<QStandardItem*> PManagerPage::ItemsFromJsonObject(const QJsonObject& jobj)
 	for (const auto& field : m_fieldName)
 	{
 		auto item = new QStandardItem;
-		item->setTextAlignment(Qt::AlignCenter);
+		item->setTextAlignment(Qt::AlignCenter); 
 
-		if (field == "privilege_read")
-		{
-			item->setText(privilege_read ? "正常" : "禁用");
-		}
-		else if (field == "privilege_edit")
+		if (field == "privilege_edit")
 		{
 			item->setText(privilege_edit ? "正常" : "禁用");
 			item->setData(privilege_edit, Qt::UserRole);
@@ -463,7 +477,7 @@ void PManagerPage::writeCSVFile(const QString& filename)
 	
 	QTextStream stream(&file);
 	//写表头
-	for (size_t i = 1; i < m_model->columnCount() - 1; i++)
+	for (size_t i = 1; i < m_model->columnCount() ; i++)
 	{
 		stream << m_model->horizontalHeaderItem(i)->text();
 		if (i < m_model->columnCount() - 2)
@@ -474,7 +488,7 @@ void PManagerPage::writeCSVFile(const QString& filename)
 	//写数据
 	for (size_t r = 0; r < m_model->rowCount(); r++)
 	{
-		for (size_t c = 1; c < m_model->columnCount() - 1; c++)
+		for (size_t c = 1; c < m_model->columnCount(); c++)
 		{
 			auto item = m_model->item(r, c);
 			if (item)
@@ -497,14 +511,14 @@ void PManagerPage::writeXLSXFile(const QString& filename)
 	Worksheet* sheet =  doc.currentWorksheet();
 
 	//写表头
-	for (size_t i = 1; i < m_model->columnCount() - 1; i++)
+	for (size_t i = 1; i < m_model->columnCount() ; i++)
 	{
 		sheet->write(1, i, m_model->horizontalHeaderItem(i)->text());
 	}
 	//写数据
 	for (size_t r = 0; r < m_model->rowCount(); r++)
 	{
-		for (size_t c = 1; c < m_model->columnCount()-1; c++)
+		for (size_t c = 1; c < m_model->columnCount(); c++)
 		{
 			auto item = m_model->item(r, c);
 			if (item)
