@@ -33,7 +33,8 @@ private:
 	QComboBox*   m_regit_postCbx{};
 
 	QWidget* CreateRegisterWidget();
-
+signals:
+	 void loginSuccess();
 public://slots
 	void onLogin();
 	void onRegister();

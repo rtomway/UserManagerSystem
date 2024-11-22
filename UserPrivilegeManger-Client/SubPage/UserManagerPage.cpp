@@ -1,21 +1,16 @@
 ﻿#include "UserManagerPage.h"
-#include "UserManagerPage.h"
-#include "UserManagerPage.h"
-#include "UserManagerPage.h"
-#include "UserManagerPage.h"
 #include "ui_UserManagerPage.h"
 #include "SHttpClient.h"
 #include "SApp.h"
-#include "SHeaderView.h"
+
 #include "SFieldTranslate.h"
 
 #include "SSwitchButton.h"
 #include "SCheckDelegate.h"
 #include "SUrlDelegate.h"
-#include "SSwitchDelegate.h"
+
 #include "SButtonDelegate.h"
 
-#include "PersonMessage.h"
 #include "UseraddDlg.h"
 #include "SMaskWidget.h"
 
@@ -23,11 +18,17 @@
 #include <QFile>
 #include <QActionGroup>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #include "xlsxdocument.h"   //文档
 #include "xlsxworksheet.h"   //工作表
 #include "xlsxworkbook.h"    //工作簿
 
+enum GradeType {
+	GT_User,
+	GT_GeneralManger,
+	GT_HighestManger
+};
 
 
 UserManagerPage::UserManagerPage(QWidget* parent)
@@ -37,6 +38,7 @@ UserManagerPage::UserManagerPage(QWidget* parent)
 	,m_setMenu(new QMenu(this))
 {
 	ui->setupUi(this);
+	
 	init();
 	initMenu();
 	initAddMenu();
@@ -50,7 +52,7 @@ UserManagerPage::~UserManagerPage()
 
 void UserManagerPage::init()
 {
-	
+
 	QFile file(":/ResourceClient/style.css");
 	if (file.open(QIODevice::ReadOnly))
 	{
@@ -75,18 +77,18 @@ void UserManagerPage::init()
 	ui->tableView->setEditTriggers(QTableView::NoEditTriggers);
 	ui->tableView->setMouseTracking(true);
 
+	ui->tableView->setCornerButtonEnabled(false);
+	ui->tableView->verticalHeader()->setMaximumWidth(18);
+
 	ui->tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-	
-	connect(ui->setBtn, &QPushButton::clicked, this, &UserManagerPage::onSet);
-	
 	
 	onSearch();
 
 	ui->setBtn->setFixedSize(32, 32);
 	ui->setBtn->setIcon(QIcon(":/ResourceClient/set.png"));
 	
+
 	connect(ui->searchEdit, &QLineEdit::returnPressed, this, &UserManagerPage::onSearch);
 	connect(ui->searchEdit, &QLineEdit::textChanged, [=](const QString&text)
 		{
@@ -94,19 +96,22 @@ void UserManagerPage::init()
 				onSearch();
 		});
 	connect(ui->searchBtn, &QPushButton::clicked, this, &UserManagerPage::onSearch);
+	connect(ui->exportBtn, &QPushButton::clicked, this, &UserManagerPage::onExport);
 
+	connect(ui->setBtn, &QPushButton::clicked, this, &UserManagerPage::onSet);
 	connect(ui->batchEnableBtn, &QPushButton::clicked, this, &UserManagerPage::onBatchEnable);
 	connect(ui->batchDisableBtn, &QPushButton::clicked, this, &UserManagerPage::onBatchDisenable);
 	connect(ui->batchDeleteBtn, &QPushButton::clicked, this, &UserManagerPage::onBatchDelete);
 
-	connect(ui->exportBtn, &QPushButton::clicked,this, &UserManagerPage::onExport);
+
+	
 
 	//设置表格视图的头视图
-	auto hHeaderView = new SHeaderView(Qt::Orientation::Horizontal);
-	ui->tableView->setHorizontalHeader(hHeaderView);
-	ui->tableView->setCornerButtonEnabled(false);
+	 auto hHeaderView = new SHeaderView(Qt::Orientation::Horizontal);
+	 ui->tableView->setHorizontalHeader(hHeaderView);
+	 hHeaderView->setSectionResizeMode(QHeaderView::Fixed);
 	//ui->tableView->verticalHeader()->setVisible(false);
-	ui->tableView->verticalHeader()->setMaximumWidth(18);
+	
 	//复选框联动
 
 	/*connect(m_model, &QStandardItemModel::itemChanged, [=](QStandardItem* item)
@@ -155,118 +160,86 @@ void UserManagerPage::init()
 		});*/
 
 	//item代理
-	auto checkDelegate = new SCheckDelegate(ui->tableView);
-	ui->tableView->setItemDelegateForColumn(0, checkDelegate);
-	connect(hHeaderView, &SHeaderView::stateChanged, [=](int state)
-		{
-			for (size_t i = 0; i < m_model->rowCount(); i++)
+		auto checkDelegate = new SCheckDelegate(ui->tableView);
+		ui->tableView->setItemDelegateForColumn(0, checkDelegate);
+		connect(hHeaderView, &SHeaderView::stateChanged, [=](int state)
 			{
-				auto item = m_model->item(i, 0);
-				item->setData(state, Qt::UserRole);
-			}
-			if (state) {
-				checkDelegate->setCheckCount(m_model->rowCount());
-			}
-			else {
-				checkDelegate->setCheckCount(0);
-			}
-		});
-	connect(checkDelegate, &SCheckDelegate::stateChanged, [=]()
-		{
-			size_t cnt = checkDelegate->checkCount();
-			if (cnt == m_model->rowCount())
+				for (size_t i = 0; i < m_model->rowCount(); i++)
+				{
+					auto item = m_model->item(i, 0);
+					item->setData(state, Qt::UserRole);
+				}
+				if (state) {
+					checkDelegate->setCheckCount(m_model->rowCount());
+				}
+				else {
+					checkDelegate->setCheckCount(0);
+				}
+			});
+		connect(checkDelegate, &SCheckDelegate::stateChanged, [=]()
 			{
-				hHeaderView->setState(Qt::Checked);
-			}
-			else if (cnt > 0)
-			{
-				hHeaderView->setState(Qt::PartiallyChecked);
-			}
-			else
-			{
-				hHeaderView->setState(Qt::Unchecked);
-			}
-		});
-
+				size_t cnt = checkDelegate->checkCount();
+				if (cnt == m_model->rowCount())
+				{
+					hHeaderView->setState(Qt::Checked);
+				}
+				else if (cnt > 0)
+				{
+					hHeaderView->setState(Qt::PartiallyChecked);
+				}
+				else
+				{
+					hHeaderView->setState(Qt::Unchecked);
+				}
+			});
 	//SUrlDelegate
 	auto urlDelegate = new SUrlDelegate(ui->tableView);
 	ui->tableView->setItemDelegateForColumn(column("user_id"),urlDelegate);
 	connect(urlDelegate, &SUrlDelegate::requestOpenUrl, [=](const QModelIndex& index)
 		{
-			if (!m_detailsDlg)
-			{
-				m_detailsDlg = new PersonMessage(this);
-				connect(m_detailsDlg, &PersonMessage::userChanged, [=](const QJsonObject& user)
-					{
-						m_model->item(index.row(), column("user_id"))->setText(user.value("user_id").toString());
-						m_model->item(index.row(), column("username"))->setText(user.value("username").toString());
-						m_model->item(index.row(), column("gender"))->setText(user.value("gender").toInt() == 1 ? "男" : user.value("gender").toInt() == 2 ? "女" : "未知");
-						m_model->item(index.row(), column("mobile"))->setText(user.value("mobile").toString());
-						m_model->item(index.row(), column("email"))->setText(user.value("email").toString());
-						m_model->item(index.row(), column("isEnable"))->setData(user.value("isEnable").toBool(),Qt::UserRole);
-					});
-			}
-			//this->nativeParentWidget()->hide();
-			connect(m_detailsDlg, &PersonMessage::setshow, [=]
-				{
-					m_detailsDlg->hide();
-					//onSearch();
-					//this->nativeParentWidget()->show();
-				});
-			connect(m_detailsDlg, &PersonMessage::userDeleted, [=](QJsonObject& user)
-				{
-					auto items = m_model->findItems(user.value("user_id").toString(), Qt::MatchFlag::MatchExactly);
-					if (!items.isEmpty())
-					{
-						auto row = items.first()->row();
-						m_model->removeRow(row);
-					}
-				});
-			
-			QJsonObject juser;
-			juser.insert("user_id", m_model->item(index.row(), column("user_id"))->text());
-			juser.insert("username", m_model->item(index.row(), column("username"))->text());
-			juser.insert("gender", m_model->item(index.row(), column("gender"))->text());
-			juser.insert("mobile", m_model->item(index.row(), column("mobile"))->text());
-			juser.insert("email", m_model->item(index.row(), column("email"))->text());
-			juser.insert("isEnable", m_model->item(index.row(), column("isEnable"))->data(Qt::UserRole).toBool()); 
-			qDebug() << "aaaaaaaaaa" << m_model->item(index.row(), column("isEnable"))->data(Qt::UserRole);
-			m_detailsDlg->setUser(juser);
-			m_detailsDlg->resize(this->size());
-			m_detailsDlg->show();
+			auto user_id = sApp->globalConfig()->value("user/user_id").toString();
+			 
+			//普通用户不能查看他人并编辑
+			if (m_model->item(index.row(),column("user_id"))->text() ==user_id||m_userGrade!=GT_User)
+				showUserDetail(index);
+			else
+				QMessageBox::information(this,"提示", "无权限");
 			
 		});
-
 	//SWitchDelegate
-	auto switchDelegate = new SSwitchDelegate(ui->tableView);
+	 switchDelegate = new SSwitchDelegate(ui->tableView);
 	ui->tableView->setItemDelegateForColumn(column("isEnable"), switchDelegate);
-	connect(switchDelegate, &SSwitchDelegate::stateChanged, [=](bool state,const QModelIndex& index)
-		{
-			auto user_id = m_model->item(index.row(), column("user_id"))->text();
-
-			SHttpClient(URL("/api/user/alter?user_id="+user_id)).debug(true)
-				.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
-				.json({ {"isEnable",state} })
-				.fail([](const QString& msg, int code)
-					{
-						qDebug() << msg << code;
-					})
-				.success([=](const QByteArray& data)
-					{
-						QJsonParseError err;
-						auto jdom = QJsonDocument::fromJson(data, &err);
-						if (jdom["code"].toInt() < 1000)
+	connect(switchDelegate, &SSwitchDelegate::stateChanged, [=](bool state, const QModelIndex& index)
+			{
+				if (m_userGrade == GT_User)
+				{
+					QMessageBox::information(this, "提示", "无权限");
+					return;
+				}
+				auto user_id = m_model->item(index.row(), column("user_id"))->text();
+				SHttpClient(URL("/api/user/alter?user_id=" + user_id)).debug(true)
+					.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+					.json({ {"isEnable",state} })
+					.fail([](const QString& msg, int code)
 						{
-							
-						}
-					})
-						.post();
-		});
+							qDebug() << msg << code;
+						})
+					.success([=](const QByteArray& data)
+						{
+							QJsonParseError err;
+							auto jdom = QJsonDocument::fromJson(data, &err);
+							if (jdom["code"].toInt() < 1000)
+							{
 
+							}
+						})
+					.post();
+			});
+	
 	//SButtonDelegate
 	auto buttonDelegate = new SButtonDelegate(ui->tableView);
 	ui->tableView->setItemDelegateForColumn(column("操作"), buttonDelegate);
-	auto perimissionBtn = buttonDelegate->addButton(new QPushButton("权限设置"));
+	//auto perimissionBtn = buttonDelegate->addButton(new QPushButton("权限设置"));
 	auto delBtn=buttonDelegate->addButton(new QPushButton("删除"));
 	QString styleStr = R"(
     QPushButton
@@ -279,14 +252,18 @@ void UserManagerPage::init()
 	}
 		)";
 	delBtn->setStyleSheet(styleStr);
-	delBtn->setFixedSize(32,20);
-	perimissionBtn->setStyleSheet(styleStr);
-	perimissionBtn->setFixedSize(48, 20);
+	delBtn->setFixedSize(32, 20);
 	connect(buttonDelegate, &SButtonDelegate::buttonClicked, [=](int id, const QModelIndex& index)
 		{
+			//update();
+			if (m_userGrade == GT_User)
+			{
+				QMessageBox::information(this, "提示", "无权限");
+				return;
+			}
 			qDebug() << id << index;
 			//删除用户
-			if (id == 1)
+			if (id == 0)
 			{
 				auto user_id=m_model->item(index.row(), column("user_id"))->text();
 				QJsonArray jarray;
@@ -309,13 +286,7 @@ void UserManagerPage::init()
 						})
 						.post();
 			}
-			else if (id == 1)
-			{
-
-			}
-
-
-		});
+	});
 }
 
 void UserManagerPage::initMenu()
@@ -333,7 +304,6 @@ void UserManagerPage::initAddMenu()
 
 void UserManagerPage::onSearch()
 {
-	
 	QVariantMap params;
 	params.insert("isDeleted",false);
 	auto filter = ui->searchEdit->text();
@@ -358,8 +328,58 @@ void UserManagerPage::onSearch()
 	
 }
 
+void UserManagerPage::GetUserGrade(int grade)
+{
+	m_userGrade = grade;
+	switchDelegate->GetsUserGrade(m_userGrade);
+}
+
+void UserManagerPage::showUserDetail(const QModelIndex& index)
+{
+	if (!m_detailsDlg)
+	{
+		m_detailsDlg = new UserDetailDlg(this);
+		//将数据更新到模型中
+		connect(m_detailsDlg, &UserDetailDlg::userChanged, [=](const QJsonObject& user)
+			{
+				m_model->item(index.row(), column("user_id"))->setText(user.value("user_id").toString());
+				m_model->item(index.row(), column("username"))->setText(user.value("username").toString());
+				m_model->item(index.row(), column("gender"))->setText(user.value("gender").toInt() == 1 ? "男" : user.value("gender").toInt() == 2 ? "女" : "未知");
+				m_model->item(index.row(), column("mobile"))->setText(user.value("mobile").toString());
+				m_model->item(index.row(), column("email"))->setText(user.value("email").toString());
+				//m_model->item(index.row(), column("isEnable"))->setData(user.value("isEnable").toBool(), Qt::UserRole);
+			});
+	}
+
+	connect(m_detailsDlg, &UserDetailDlg::userDeleted, [=](QJsonObject& user)
+		{
+			auto items = m_model->findItems(user.value("user_id").toString(), Qt::MatchFlag::MatchExactly);
+			if (!items.isEmpty())
+			{
+				auto row = items.first()->row();
+				m_model->removeRow(row);
+			}
+		});
+	//加载用户信息到用户详情页面
+	QJsonObject juser;
+	juser.insert("user_id", m_model->item(index.row(), column("user_id"))->text());
+	juser.insert("username", m_model->item(index.row(), column("username"))->text());
+	juser.insert("gender", m_model->item(index.row(), column("gender"))->text());
+	juser.insert("mobile", m_model->item(index.row(), column("mobile"))->text());
+	juser.insert("email", m_model->item(index.row(), column("email"))->text());
+	//juser.insert("isEnable", m_model->item(index.row(), column("isEnable"))->data(Qt::UserRole).toBool());
+	m_detailsDlg->setUser(juser);
+	m_detailsDlg->resize(this->size());
+	m_detailsDlg->show();
+}
+
 void UserManagerPage::setBatchEnable(bool enable)
 {
+	if (m_userGrade == GT_User)
+	{
+		QMessageBox::information(this, "提示", "无权限");
+		return;
+	}
 	QJsonObject jobj;
 	QJsonArray jarray;
 	for (size_t i = 0; i < m_model->rowCount(); i++)
@@ -413,13 +433,17 @@ void UserManagerPage::onBatchDisenable()
 
 void UserManagerPage::onBatchDelete()
 {
+	if (m_userGrade == GT_User)
+	{
+		QMessageBox::information(this, "提示", "无权限");
+		return;
+	}
 	QJsonObject jobj;
 	QJsonArray jarray;
 	std::set<int, std::greater<int>> deleteRows;
 	for (size_t i = 0; i < m_model->rowCount(); i++)
 	{
 		auto item = m_model->item(i);
-		qDebug() << item  << item->data(Qt::UserRole);
 		if (item && item->data(Qt::UserRole).toBool())// == Qt::CheckState::Checked)
 		{
 			jarray.append(m_model->item(i,column("user_id"))->text());
@@ -512,43 +536,6 @@ QJsonObject UserManagerPage::rowMessage(const QString& user_id)
 	juser.insert("isEnable", m_model->item(row, column("isEnable"))->data(Qt::UserRole).toBool());
 	return juser;
 }
-void UserManagerPage::personCenter(const QString& user_id)
-{
-	auto juser=rowMessage(user_id);
-	if (!m_detailsDlg)
-	{
-		m_detailsDlg = new PersonMessage(this);
-		connect(m_detailsDlg, &PersonMessage::userChanged, [=](const QJsonObject& user)
-			{
-				/*m_model->item(index.row(), column("user_id"))->setText(user.value("user_id").toString());
-				m_model->item(index.row(), column("username"))->setText(user.value("username").toString());
-				m_model->item(index.row(), column("gender"))->setText(user.value("gender").toInt() == 1 ? "男" : user.value("gender").toInt() == 2 ? "女" : "未知");
-				m_model->item(index.row(), column("mobile"))->setText(user.value("mobile").toString());
-				m_model->item(index.row(), column("email"))->setText(user.value("email").toString());
-				m_model->item(index.row(), column("isEnable"))->setData(user.value("isEnable").toBool(), Qt::UserRole);*/
-			});
-	}
-	//this->nativeParentWidget()->hide();
-	connect(m_detailsDlg, &PersonMessage::setshow, [=]
-		{
-			m_detailsDlg->hide();
-			onSearch();
-			this->nativeParentWidget()->show();
-		});
-	connect(m_detailsDlg, &PersonMessage::userDeleted, [=](QJsonObject& user)
-		{
-			auto items = m_model->findItems(user.value("user_id").toString(), Qt::MatchFlag::MatchExactly);
-			if (!items.isEmpty())
-			{
-				auto row = items.first()->row();
-				m_model->removeRow(row);
-			}
-		});
-
-	m_detailsDlg->setUser(juser);
-	m_detailsDlg->resize(this->size());
-	m_detailsDlg->show();
-}
 
 void UserManagerPage::parseJson(const QJsonObject& obj)
 {
@@ -592,10 +579,11 @@ void UserManagerPage::parseJson(const QJsonObject& obj)
 void UserManagerPage::ontableviewResize()
 {
 	int columnCount = m_model->columnCount();
-	int totalWidth = ui->tableView->width() - 20-18;
+	int totalWidth = this->width()-18-20;
+	
 	if (columnCount > 0) {
-		int columnWidth = totalWidth / (columnCount - 1);
-		for (int i = 0; i < columnCount; i++) {
+		int columnWidth = totalWidth / (columnCount-1);
+		for (int i = 0; i < columnCount-1; i++) {
 			ui->tableView->setColumnWidth(i, columnWidth);
 			ui->tableView->setRowHeight(i, 40);
 		}
@@ -651,6 +639,11 @@ void UserManagerPage::resizeEvent(QResizeEvent* ev)
 
 void UserManagerPage::singleAdd()
 {
+	if (m_userGrade == GT_User)
+	{
+		QMessageBox::information(this, "提示", "无权限");
+		return;
+	}
 	if (!m_userAddDlg)
 	{
 		m_userAddDlg = new UseraddDlg;
@@ -666,6 +659,11 @@ void UserManagerPage::singleAdd()
 
 void UserManagerPage::batchAdd()
 {
+	if (m_userGrade == GT_User)
+	{
+		QMessageBox::information(this, "提示", "无权限");
+		return;
+	}
 	auto filename = QFileDialog::getOpenFileName(this, "选择用户表格", "./", "xlsx (*.xlsx;*.csv);;all (*.*)");
 	if (filename.isEmpty())
 	{
@@ -736,6 +734,22 @@ void UserManagerPage::readCsv(const QString& filename)
 					onSearch();
 				}
 			}).post();
+	SHttpClient(URL("/api/user_privilege/batch_create")).debug(true)
+		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+		.json({ {"list",jarray } })
+		.success([=](const QByteArray& data)
+			{
+				QJsonParseError error;
+				auto jdom = QJsonDocument::fromJson(data, &error);
+				if ((error.error != QJsonParseError::NoError) && jdom["code"].toInt() > 1000)
+				{
+					return;
+				}
+				else
+				{
+					onSearch();
+				}
+			}).post();
 }
 
 void UserManagerPage::readXlsx(const QString& filename)
@@ -780,9 +794,24 @@ void UserManagerPage::readXlsx(const QString& filename)
 			}
 		}
 		jarray.append(obj);
-		qDebug() << obj;
 	}
 	SHttpClient(URL("/api/user/batch_create")).debug(true)
+		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+		.json({ {"list",jarray } })
+		.success([=](const QByteArray& data)
+			{
+				QJsonParseError error;
+				auto jdom = QJsonDocument::fromJson(data, &error);
+				if ((error.error != QJsonParseError::NoError) && jdom["code"].toInt() > 1000)
+				{
+					return;
+				}
+				else
+				{
+					onSearch();
+				}
+			}).post();
+	SHttpClient(URL("/api/user_privilege/batch_create")).debug(true)
 		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
 		.json({ {"list",jarray } })
 		.success([=](const QByteArray& data)

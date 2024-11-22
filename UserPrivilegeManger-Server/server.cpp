@@ -194,7 +194,7 @@ void Server::userRoute()
 			}
 
 
-			QString	sql = "select id,user_id,gender,username,mobile,email,isEnable from user ";
+			QString	sql = "select id,user_id,gender,username,mobile,email,isEnable,grade from user ";
 			sql += filter;
 			sql += QString("limit %1,%2").arg((page - 1) * pageSize).arg(pageSize);
 
@@ -349,6 +349,13 @@ void Server::userRoute()
 				query.exec();
 				CheckQueryError(query);
 			}
+			query.prepare("update user_privilege set isDeleted=true where user_id=?");
+			for (size_t i = 0; i < jarray.size(); i++)
+			{
+				query.bindValue(0, jarray.at(i).toString());
+				query.exec();
+				CheckQueryError(query);
+			}
 			return SResult::success();
 		});
 	//修改
@@ -400,7 +407,7 @@ void Server::userRoute()
 			QSqlQuery query(wrap.openConnection());
 			query.exec(QString("update user set %1 where user_id='%2'")
 				.arg(update).arg(uquery.queryItemValue("user_id")));
-			qDebug() <<"66666666666666666666" << QString("update user set %1 where user_id='%2'")
+			qDebug() <<QString("update user set %1 where user_id='%2'")
 				.arg(update).arg(uquery.queryItemValue("user_id"));
 			CheckQueryError(query);
 			if (query.numRowsAffected() == 0)
@@ -581,11 +588,8 @@ void Server::userRoute()
 			responder.writeHeader("Content-Disposition", ("attachment;filename=" + QFileInfo(file.fileName()).fileName()).toUtf8());
 			responder.writeBody(file.readAll());
 		});
-
 }
-
 //权限接口
-
 void Server::privilegeRoute()
 {
 	//权限列表
@@ -661,8 +665,6 @@ void Server::privilegeRoute()
 			return SResult::success(jobj);
 
 		});
-
-
 	//修改
 	m_server.route("/api/user_privilege/alter", [](const QHttpServerRequest& request)
 		{
@@ -700,6 +702,50 @@ void Server::privilegeRoute()
 			if (query.numRowsAffected() == 0)
 			{
 				return SResult::failure(SResultCode::SuccessButNotData);
+			}
+			return SResult::success();
+		});
+	//批量创建
+	m_server.route("/api/user_privilege/batch_create", [](const QHttpServerRequest& request)
+		{
+			std::optional<QByteArray> ret = CheckToken(request);
+			if (ret.has_value())
+			{
+				return ret.value();
+			}
+			CheckJsonParse(request);
+
+			SConnectionWrap wrap;
+			auto db = wrap.openConnection();
+			db.transaction();
+			QSqlQuery query(db);
+			query.prepare("insert ignore into user_privilege(user_id, username) values(?,?)");
+
+			auto roobj = jdom.object();
+			auto jarr = roobj.value("list").toArray();
+			for (size_t i = 0; i < jarr.size(); i++)
+			{
+				auto robj = jarr.at(i).toObject(); qDebug() << robj;
+				if (!(robj.contains("user_id") && robj.contains("username")))
+				{
+					db.rollback();
+					return SResult::failure(SResultCode::ParamLoss, "缺少user_id或username参数");
+				}
+				query.bindValue(0, robj.value("user_id").toString());
+				query.bindValue(1, robj.value("username").toString());
+				if (!query.exec())
+				{
+					db.rollback();
+					return SResult::failure(SResultCode::ServerSqlQueryError);
+				}
+				//CheckQueryError(query);
+			}
+			db.commit();
+
+			//是否插入成功
+			if (query.numRowsAffected() == 0)
+			{
+				return SResult::failure(SResultCode::UserAccountExists);
 			}
 			return SResult::success();
 		});

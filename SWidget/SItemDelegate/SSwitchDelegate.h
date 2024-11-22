@@ -8,6 +8,9 @@ class SSwitchDelegate :public QStyledItemDelegate
 	Q_OBJECT
 public:
 	SSwitchDelegate(QObject* parent = nullptr);
+	void GetsUserGrade(int grade);
+private:
+	int m_Grade = 0;
 protected:
 	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 	bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override;

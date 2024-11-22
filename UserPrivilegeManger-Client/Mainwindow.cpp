@@ -17,10 +17,17 @@ enum NavType {
 	NT_PersonCenter
 };
 
+enum GradeType {
+	GT_User,
+	GT_GeneralManger,
+	GT_HighestManger
+};
+
 Mainwindow::Mainwindow(QWidget*parent)
 	:QWidget(parent)
 {
-	init();
+	GetUserGrade();
+		init();
 	SMaskWidget::instance()->setMainWidget(this);
 }
 void Mainwindow::init()
@@ -29,12 +36,12 @@ void Mainwindow::init()
 	initUserManagerPage();
 	initPManagerPage();
 	initPersonCenter();
+	connect(m_personCenter, &PersonCenterPage::reLogin, this, &Mainwindow::reLogin);
 }
 
 void Mainwindow::initMainwindow()
 {
 	this->resize(1200,650);
-
 	m_navBar = new SNavBar;
 	m_treeNavBar = new QTreeWidget(this);
 	m_stkWidget = new QStackedWidget(this);
@@ -48,7 +55,7 @@ void Mainwindow::initMainwindow()
 	m_hideBtn->setStyleSheet(R"(
 				QPushButton#hideBtn{
 				background-color:rgb(243, 252, 249);
-					font-color:white;
+					color:white;
 					font-size:15px;	
 						}
 				QPushButton#hideBtn:hover{
@@ -135,8 +142,14 @@ void Mainwindow::initMainwindow()
 	item1->setIcon(0,QIcon(":/ResourceClient/user.png"));
 	item1->setSelected(true);
 	
-	auto item2 = new QTreeWidgetItem(m_treeNavBar, { "角色管理" }, NT_RoleManger);
-	item2->setIcon(0, QIcon(":/ResourceClient/role.png"));
+	//
+	/*if (m_Grade == 2)
+	{
+		qDebug() << "ppppppppppppppppppp";
+		auto item2 = new QTreeWidgetItem(m_treeNavBar, { "角色管理" }, NT_RoleManger);
+		item2->setIcon(0, QIcon(":/ResourceClient/role.png"));
+	}*/
+
 	auto item3 = new QTreeWidgetItem(m_treeNavBar, { "个人中心" }, NT_PersonCenter);
 	item3->setIcon(0, QIcon(":/ResourceClient/privilege.png"));
 	
@@ -155,6 +168,7 @@ void Mainwindow::initMainwindow()
 				break;
 			case NT_PersonCenter:
 				m_stkWidget->setCurrentIndex(NT_PersonCenter);
+				m_personCenter->GetpersonMessage();
 				break;
 			default:
 				break;
@@ -183,36 +197,8 @@ void Mainwindow::initPManagerPage()
 void Mainwindow::initPersonCenter()
 {
 	m_personCenter = new PersonCenterPage;
-
-	//获取个人信息
-	SHttpClient(URL("/api/user/list?user_id=" + sApp->globalConfig()->value("user/user_id").toString())).debug(true)
-		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
-		.success([=](const QByteArray& data)
-			{
-				QJsonParseError error;
-				auto jdom = QJsonDocument::fromJson(data, &error);
-				if (error.error != QJsonParseError::NoError)
-				{
-					qWarning() << "失败";
-					return;
-				}
-				qDebug() << "+++++++++++++++++" << jdom;
-				auto jarray = jdom.object().value("data").toObject().value("lists").toArray();
-				QJsonObject juser=jarray.at(0).toObject();
-				juser.insert("user_id",juser.value("user_id").toString());
-				juser.insert("username", juser.value("username").toString());
-				juser.insert("gender", juser.value("gender").toInt()==1?"男":(juser.value("gender").toInt() == 2?"女":"未知"));
-				juser.insert("mobile", juser.value("mobile").toString());
-				juser.insert("email", juser.value("email").toString());
-				juser.insert("isEnable", juser.value("isEnable").toInt()==1?true:false);
-				qDebug() << "-----------------" << juser;
-				m_personCenter->setUser(juser);
-			}).get();
-	
 	m_stkWidget->addWidget(m_personCenter);
-	
 }
-
 
 void Mainwindow::updateBtnSize()
 {
@@ -221,6 +207,53 @@ void Mainwindow::updateBtnSize()
 	int buttonWidth = HideBtn_width;
 
 	m_hideBtn->setGeometry(m_treeNavBar->geometry().x()+m_treeNavBar->width(),0, buttonWidth, buttonHeight);
+	
+}
+
+void Mainwindow::updateReloginlater()
+{
+	m_personCenter->GetpersonMessage();
+	GetUserGrade();
+}
+
+void Mainwindow::GetUserGrade()
+{
+	auto user_id = sApp->globalConfig()->value("user/user_id").toString();
+	SHttpClient(URL("/api/user/list?user_id="+user_id)).debug(true)
+		.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+		.success([=](const QByteArray& data)
+			{
+				QJsonParseError error;
+				auto jdom = QJsonDocument::fromJson(data, &error);
+				if (error.error != QJsonParseError::NoError)
+				{
+					qWarning() << "失败";
+					return 0;
+				}
+				auto jarray = jdom.object().value("data").toObject().value("lists").toArray();
+				QJsonObject juser = jarray.at(0).toObject();
+				m_Grade=juser.value("grade").toInt();
+				//获取用户权限等级
+				m_userManagerpage->GetUserGrade(m_Grade);
+				if (m_Grade == GT_HighestManger)
+				{
+					auto item2 = new QTreeWidgetItem(m_treeNavBar, { "角色管理" }, NT_RoleManger);
+					item2->setIcon(0, QIcon(":/ResourceClient/role.png"));
+					m_personCenter->showUserGrade("最高管理员");
+				}
+				else
+				{
+					if (m_Grade == GT_GeneralManger)
+					{
+						m_personCenter->showUserGrade("一般管理员");
+					}
+					else
+					{
+						m_personCenter->showUserGrade("普通用户");
+					}
+					m_treeNavBar->takeTopLevelItem(GT_HighestManger);
+				}
+			}).get();
 	
 }
 

@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QAbstractItemView>
+#include <QMessageBox>
 
 #define BUTTON_WIDTH  45
 #define BUTTON_HEIGHT 20
@@ -15,6 +16,10 @@ SSwitchDelegate::SSwitchDelegate(QObject* parent)
 {
 }
 
+void SSwitchDelegate::GetsUserGrade(int grade) 
+{
+	m_Grade = grade;
+}
 void SSwitchDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
 	painter->save();
@@ -59,6 +64,43 @@ void SSwitchDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 bool SSwitchDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
 {
 	if (event->type() == QEvent::MouseButtonRelease) {
+		if (!m_Grade)
+		{
+			QMessageBox msgBox;
+			msgBox.setText("无权限");
+			msgBox.setWindowTitle("提示");
+			msgBox.setIcon(QMessageBox::Information);
+			msgBox.setStyleSheet(R"(
+				QMessageBox {	
+						background-color:rgb(149, 237, 208);
+						border-radius: 3px;
+						color: red;
+					}
+			QMessageBox QLabel {
+                   font-family: '华文行楷';
+                   font-size: 20px;
+                   color: #FF9933;
+                   padding-left: 0px;
+                   padding-top: 20px;
+                   margin-right: 10px;
+                   text-align: center;
+						}
+					QMessageBox QPushButton {
+                         background-color: #99FF33;
+                         color: black;
+                         width: 40px;
+                         height: 20px;
+                         margin-right: 10px;
+                         border: none;
+                         border-radius: 4px;
+									}
+				QMessageBox QPushButton:hover {
+					    background-color: #CCFF33;
+										}
+								)");
+			msgBox.exec();
+			return QStyledItemDelegate::editorEvent(event, model, option, index);
+		}
 		auto state = model->data(index, Qt::UserRole).toBool();
 		model->setData(index, !state, Qt::UserRole);
 		emit stateChanged(!state, index);

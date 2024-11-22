@@ -10,6 +10,14 @@ class PersonCenterPage :public PersonMessage
 public:
 	PersonCenterPage(QWidget* parent = nullptr);
 	void init();
+	void GetpersonMessage();
+private:
+	QPushButton* m_reLoginBtn{};
+	QLabel* m_gradeLabel{};
+public:
+	void showUserGrade( const QString&userGrade);
+signals:
+	void reLogin();
 
 };
 

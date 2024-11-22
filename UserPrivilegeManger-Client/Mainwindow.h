@@ -39,8 +39,15 @@ private:
 	bool m_treeIsHidden{false};
 	QPushButton* m_hideBtn{};
 	void updateBtnSize();
+
+	int m_Grade=-1;
+	
 signals:
 	void Personcenter(const QString &user_id);
+	void reLogin();
+public:
+	void updateReloginlater();
+	void GetUserGrade();
 protected:
 	void resizeEvent(QResizeEvent*ev)override;
 };

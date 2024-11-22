@@ -115,6 +115,25 @@ void UseraddDlg::init()
 							}
 						 
 						}).post();
+				SHttpClient(URL("/api/user/create")).debug(true)
+					.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+					.json(m_juser)
+					.success([=](const QByteArray& data)
+						{
+							QJsonParseError error;
+							auto jdom = QJsonDocument::fromJson(data, &error);
+							if ((error.error != QJsonParseError::NoError)&&jdom["code"].toInt()>1000)
+							{
+								qDebug() << "--------------" << (error.error != QJsonParseError::NoError) << jdom["code"].toInt();
+								QMessageBox::critical(this,QString("无法创建"), jdom["message"].toString());
+								return;
+							}
+							else
+							{
+								emit newUser(m_juser);
+							}
+						 
+						}).post();
 
 			});
 		connect(cancelBtn, &QPushButton::clicked, [=]

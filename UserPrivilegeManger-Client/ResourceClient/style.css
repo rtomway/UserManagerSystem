@@ -1,7 +1,8 @@
 ﻿/* 通用设置 */
 QWidget {
     background-color: rgb(243, 252, 249);
-    color: black;
+    color: black  ;
+
 }
 
 QLabel {
@@ -12,7 +13,7 @@ QLineEdit {
     border: 1px solid #211c1c;
     border-radius: 5px;
     padding: 5px 15px;
-    box-shadow: 0 4px 0 #DDDDDD;
+  
 }
 
 QLineEdit:hover {
@@ -201,8 +202,9 @@ QPushButton#NO:hover {
     
 /*消息提示框*/
 QMessageBox {
-    background-color: #FFFF99;
+    background-color: rgb(149, 237, 208);
     border-radius: 3px;
+    color: red;
 }
 QMessageBox QLabel {
     font-family: '华文行楷';

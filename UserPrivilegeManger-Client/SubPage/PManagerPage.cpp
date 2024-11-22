@@ -69,7 +69,7 @@ void PManagerPage::init()
 	onSearch();
 
 	//连接批量操作按钮信号
-	connect(ui->batchDeleteBtn, &QPushButton::clicked, this, &PManagerPage::onBatchDelete);
+	//connect(ui->batchDeleteBtn, &QPushButton::clicked, this, &PManagerPage::onBatchDelete);
 
 	auto switchDelegate = new SSwitchDelegate(ui->tableView);
 	ui->tableView->setItemDelegateForColumn(column("privilege_edit"), switchDelegate);

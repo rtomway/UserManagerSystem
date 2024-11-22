@@ -7,7 +7,11 @@ class SCheckDelegate :public QStyledItemDelegate
 {
 	Q_OBJECT
 public:
-	SCheckDelegate(QObject* parent = nullptr);
+	SCheckDelegate(QObject* parent = nullptr)
+		:QStyledItemDelegate(parent)
+	{
+
+	}
 	size_t checkCount()const { return m_checkcount; }
 	void setCheckCount(size_t count) { m_checkcount = count; }
 protected:

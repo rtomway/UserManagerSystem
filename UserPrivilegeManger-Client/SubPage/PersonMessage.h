@@ -17,9 +17,9 @@ public:
 	void init();
 	void setUser(const QJsonObject& user);
 private:
-	QWidget* m_leftLayout{};
+	QWidget* m_leftWidget{};
 public:
-	QWidget* leftLayout()const;
+	QWidget* leftWidget()const;
 signals:
 	void userChanged(const QJsonObject&user);
 protected://slots
@@ -34,7 +34,7 @@ private:
 	QLabel* m_mobile_lab{};
 	QLabel* m_email_lab{};
 	QLabel* m_gender_lab{};
-	SSwitchButton* m_isEnable_btn{};
+	//SSwitchButton* m_isEnable_btn{};
 signals:
 	void setshow();
 	void userDeleted(QJsonObject&user);

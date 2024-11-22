@@ -68,7 +68,7 @@ void LoginRegisterDlg::initUi()
 	m_timer->setInterval(3500);
 	m_timer->callOnTimeout([=] { m_tipBox->clear(); m_timer->stop(); });
 
-	//setTip("请登录QAQ!");
+	setTip("请登录QAQ!");
 
 	//关闭按钮
 	auto closeBtn = new QPushButton(this);
@@ -113,6 +113,8 @@ QWidget* LoginRegisterDlg::CreateLoginWidget()
 
 	m_passwordEdit->setPlaceholderText("输入密码");
 	m_passwordEdit->setEchoMode(QLineEdit::EchoMode::Password);
+	//是否记住密码
+	if(config->value("user/rememberPassword").toBool())
 	m_passwordEdit->setText(config->value("user/password").toString());
 
 	m_autoLoginChx->setChecked(config->value("user/autoLogin").toBool());
@@ -131,7 +133,7 @@ QWidget* LoginRegisterDlg::CreateLoginWidget()
 			//如果取消记住密码，则取消自动登陆(没记住密码，哪来的自动登陆)
 			if (!checked)
 				m_autoLoginChx->setChecked(false);
-			config->setValue("user/rememberPassword", checked);
+				config->setValue("user/rememberPassword", checked);
 		});
 
 	goRegisterBtn->setObjectName("goRegisterBtn");
@@ -148,7 +150,6 @@ QWidget* LoginRegisterDlg::CreateLoginWidget()
 	connect(loginBtn, &QPushButton::clicked, this, &LoginRegisterDlg::onLogin);
 	connect(goRegisterBtn, &QPushButton::clicked, [=]
 		{
-			qDebug() << "goRegisterBtn";
 			m_stkWidget->setCurrentWidget(m_registerWidget);
 		});
 
@@ -284,6 +285,7 @@ void LoginRegisterDlg::onLogin()
 					config->setValue("user/rememberPassword", isRememberPwd);
 					config->setValue("user/autoLogin", m_autoLoginChx->isChecked());
 
+					
 					accept();
 				}
 				else

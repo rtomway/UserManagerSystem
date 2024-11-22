@@ -6,14 +6,8 @@
 #include<QMouseEvent>
 #include<QPainter>
 
-SCheckDelegate::SCheckDelegate(QObject* parent)
-	:QStyledItemDelegate(parent)
-{
-
-}
 void SCheckDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-	
 		// 获取选中状态
 		bool checkState = index.data(Qt::UserRole).toBool();
 	

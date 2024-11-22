@@ -1,4 +1,5 @@
 ﻿#include "PersonMessage.h"
+#include "PersonMessage.h"
 #include <QBoxLayout>
 #include <QLabel>
 #include <QFormLayout>
@@ -12,10 +13,11 @@
 #include <QHttpMultipart>
 #include "SMaskWidget.h"
 #include <QDebug>
+#include <QTimer>
 
 PersonMessage::PersonMessage(QWidget* parent)
 	:QWidget(parent)
-	,m_leftLayout(new QWidget)
+	,m_leftWidget(new QWidget)
 {
 	init();
 }
@@ -24,6 +26,7 @@ void PersonMessage::init()
 {
 	//本身背景样式
 	this->setAttribute(Qt::WA_StyledBackground);
+	
 	setStyleSheet(R"(
 				QLabel
 				{
@@ -34,15 +37,15 @@ void PersonMessage::init()
 					width:80px;
 					height:30px;
 				}
+				
 			)");
 	auto thlayout = new QHBoxLayout(this);
-	//auto mmlayout= new QVBoxLayout;
-	thlayout->addWidget(leftLayout());
-	//thlayout->addStretch(0);
+	
 	auto rightLatout = new QWidget;
 	auto mlayout = new QVBoxLayout(rightLatout);
+
+	thlayout->addWidget(leftWidget());
 	thlayout->addWidget(rightLatout);
-	//thlayout->addStretch();
 
 	//m_backBtn = new QPushButton("返回");
 	//m_backBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -50,6 +53,8 @@ void PersonMessage::init()
 	//mmlayout->addWidget(m_backBtn);
 	//mmlayout->addStretch();
 
+
+	//右侧
 	auto baseInfoBtn = new QPushButton("编辑基本信息");
 	auto resetPasswordBtn = new QPushButton("重置密码");
 	auto delBtn = new QPushButton("删除用户");
@@ -61,8 +66,8 @@ void PersonMessage::init()
 	m_mobile_lab = new QLabel;
 	m_email_lab = new QLabel;
 	m_gender_lab = new QLabel;
-	m_isEnable_btn = new SSwitchButton;
-	m_isEnable_btn->setFixedWidth(40);
+	//m_isEnable_btn = new SSwitchButton;
+	//m_isEnable_btn->setFixedWidth(40);
 
 	mlayout->addSpacerItem(new QSpacerItem(0, 50));
 		
@@ -82,15 +87,15 @@ void PersonMessage::init()
 		mlayout->addSpacerItem(new QSpacerItem(60, 30));
 
 		auto lflayout = new QFormLayout;
-		lflayout->addRow("用户ID", m_user_id_lab);
-		lflayout->addRow("用户名", m_username_lab);
-		lflayout->addRow("性别", m_gender_lab);
+		lflayout->addRow("用户ID:", m_user_id_lab);
+		lflayout->addRow("用户名:", m_username_lab);
+		lflayout->addRow("性别:", m_gender_lab);
 
 
 		auto rflayout = new QFormLayout;
-		rflayout->addRow("电话", m_mobile_lab);
-		rflayout->addRow("邮箱", m_email_lab);
-		rflayout->addRow("账号状态", m_isEnable_btn);
+		rflayout->addRow("电话:", m_mobile_lab);
+		rflayout->addRow("邮箱:", m_email_lab);
+		//rflayout->addRow("账号状态:", m_isEnable_btn);
 
 
 		auto hhlayout = new QHBoxLayout;
@@ -109,18 +114,14 @@ void PersonMessage::init()
 		hlayout->addWidget(delBtn);
 		hlayout->addStretch();
 		
-
 		mlayout->addSpacerItem(new QSpacerItem(60,20));
 		mlayout->addLayout(hlayout);
 		mlayout->addStretch();
 	
-	
-	/*connect(m_backBtn, &QPushButton::clicked, [=]
-		{
-			emit setshow();
-		});*/
+	//修改头像
 	connect(avatarAlterBtn, &QPushButton::clicked, this, &PersonMessage::onAvatarUpload);
-	connect(m_isEnable_btn, &SSwitchButton::stateChanged, [=](bool state)
+	//修改账号状态
+	/*connect(m_isEnable_btn, &SSwitchButton::stateChanged, [=](bool state)
 		{
 			SHttpClient(URL("/api/user/alter?user_id="+m_juser.value("user_id").toString())).debug(true)
 				.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
@@ -141,9 +142,7 @@ void PersonMessage::init()
 						{
 							if (jdom["code"].toInt() == 0)
 							{
-								qDebug() << "1111111111111111"<<m_juser;
 								m_juser.insert("isEnable", state);
-								qDebug() << "00000000000000000" << m_juser;
 								emit userChanged(m_juser);
 							}
 							
@@ -151,7 +150,8 @@ void PersonMessage::init()
 
 					})
 				.post();
-		});
+		});*/
+	//删除
 	connect(delBtn, &QPushButton::clicked, [=]
 		{
 			QJsonArray jarray;
@@ -175,6 +175,7 @@ void PersonMessage::init()
 					})
 				.post();
 		});
+	//编辑基本信息
 	connect(baseInfoBtn, &QPushButton::clicked, [=]()
 		{
 			if (!m_userEditDlg)
@@ -191,6 +192,40 @@ void PersonMessage::init()
 			m_userEditDlg->setUser(m_juser);
 			SMaskWidget::instance()->popUp(m_userEditDlg);
 		});
+	//重置密码
+	connect(resetPasswordBtn, &QPushButton::clicked, [=]
+		{
+			SHttpClient(URL("/api/user/alter?user_id="+m_juser.value("user_id").toString())).debug(true)
+				.header("Authorization", "Bearer" + sApp->userData("user/token").toString())
+				.json({ {"password","123456"}})
+				.fail([](const QString& msg, int code)
+					{
+						qDebug() << msg << code;
+					})
+				.success([=](const QByteArray& data)
+					{
+						QJsonParseError err;
+						auto jdom = QJsonDocument::fromJson(data, &err);
+						if (jdom["code"].toInt() == 0)
+						{
+							QMessageBox message;
+							message.setText("重置成功");
+							message.setStyleSheet("font-size:25px;color:rgb(82, 150, 129);font - weight:2px;");
+							message.addButton(QMessageBox::Ok);
+
+							//去除默认OK键 （ok键在exec中自动生成,先添加一个）
+							message.button(QMessageBox::Ok)->hide();
+							//去边框
+							message.setWindowFlags(Qt::FramelessWindowHint);
+							message.setAttribute(Qt::WA_TranslucentBackground);
+
+							//1秒
+							QTimer::singleShot(1200, &message, &QDialog::accept);
+							message.exec();
+						}
+					})
+				.post();
+		});
 }
 
 void PersonMessage::setUser(const QJsonObject& user)
@@ -200,17 +235,18 @@ void PersonMessage::setUser(const QJsonObject& user)
 	m_user_id_lab->setText(m_juser.value("user_id").toString());
 	m_username_lab->setText(m_juser.value("username").toString());
 	m_gender_lab->setText(m_juser.value("gender").toString());
-	m_isEnable_btn->setToggle(m_juser.value("isEnable").toBool());
+	//m_isEnable_btn->setToggle(m_juser.value("isEnable").toBool());
 	m_mobile_lab->setText(m_juser.value("mobile").toString());
 	m_email_lab->setText(m_juser.value("email").toString());
 	onAvatarDownload();
 }
 
-QWidget* PersonMessage::leftLayout() const
+QWidget* PersonMessage::leftWidget() const
 {
 
-	return m_leftLayout;
+	return m_leftWidget;
 }
+
 
 
 void PersonMessage::onAvatarDownload()
