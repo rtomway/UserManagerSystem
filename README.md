@@ -4,7 +4,7 @@
 
 
 登录界面
-![Snipaste_2025-02-13_23-03-55](https://github.com/user-attachments/assets/e39f0dcf-1ce4-47c3-aa2d-5935b9ac6614){:style="width:500px; height:300px;"}
+<img src="[https://example.com/image1.png](https://github.com/rtomway/UserManagerSystem/blob/master/Resultpicture/Snipaste_2025-02-13_23-03-55.png?raw=true)" alt="登录界面" width="600" height="400">
 
 用户界面
 ![Snipaste_2025-02-13_23-04-11](https://github.com/user-attachments/assets/7c336d5b-4693-456d-a01d-ffa82631233b){:style="width:300px; height:300px;"}
