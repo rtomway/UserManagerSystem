@@ -4,7 +4,7 @@
 
 
 登录界面
-<img src="Resultpicture/Snipaste_2025-02-13_23-03-55.png" alt="Example Image" width="300" height="200">
+<img src="Resultpicture/Snipaste_2025-02-13_23-03-55.png" alt="Example Image" width="500" height="400">
 
 用户界面
 ![Snipaste_2025-02-13_23-04-11](https://github.com/user-attachments/assets/7c336d5b-4693-456d-a01d-ffa82631233b){:style="width:300px; height:300px;"}
