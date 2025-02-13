@@ -8,15 +8,18 @@
 <img src="Resultpicture/Snipaste_2025-02-13_23-03-55.png" alt="Example Image" width="700" height="500">
 
 用户界面
-![Snipaste_2025-02-13_23-04-11](https://github.com/user-attachments/assets/7c336d5b-4693-456d-a01d-ffa82631233b)
+
+<img src="Resultpicture/Snipaste_2025-02-13_23-04-11.png" alt="Example Image" width="700" height="500">
 
 个人中心
-![Snipaste_2025-02-13_23-04-25](https://github.com/user-attachments/assets/5f289230-d2f9-45aa-aeb0-77754a025175)
 
+<img src="Resultpicture/Snipaste_2025-02-13_23-04-25.png" alt="Example Image" width="700" height="500">
 权限管理界面
-![Snipaste_2025-02-13_23-04-38](https://github.com/user-attachments/assets/aebfd91c-37ac-462d-9be5-b60f87717c04)
+
+<img src="Resultpicture/Snipaste_2025-02-13_23-04-38.png" alt="Example Image" width="700" height="500">
 
 个人信息编辑界面
-![Snipaste_2025-02-13_23-05-19](https://github.com/user-attachments/assets/57592460-c39b-479e-9198-1f62fac56f51)
+
+<img src="Resultpicture/Snipaste_2025-02-13_23-05-19.png" alt="Example Image" width="700" height="500">
 
 
