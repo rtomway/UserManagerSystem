@@ -1,6 +1,12 @@
 # UserManagerSystem
 基于Qt6的用户权限管理系统
 采用C/S架构、mvc架构，前后端分离，模块 化管理，使用模型视图框架、代理。登录模块采用JWT技术,后端模块使用QHttpServer，使用Json传输、解析数据，采用 数据库连接池实现MySql连接复用和负载均衡，自定义登录、注册控件和事件处理，个性化界面定制。
+<style>
+img {
+  width: 500px;
+  height: 300px;
+}
+</style>
 
 登录界面
 ![Snipaste_2025-02-13_23-03-55](https://github.com/user-attachments/assets/e39f0dcf-1ce4-47c3-aa2d-5935b9ac6614)
