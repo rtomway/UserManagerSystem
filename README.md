@@ -8,7 +8,7 @@
 <img src="Resultpicture/Snipaste_2025-02-13_23-03-55.png" alt="Example Image" width="700" height="500">
 
 用户界面
-![Snipaste_2025-02-13_23-04-11](https://github.com/user-attachments/assets/7c336d5b-4693-456d-a01d-ffa82631233b){:style="width:300px; height:300px;"}
+![Snipaste_2025-02-13_23-04-11](https://github.com/user-attachments/assets/7c336d5b-4693-456d-a01d-ffa82631233b)
 
 个人中心
 ![Snipaste_2025-02-13_23-04-25](https://github.com/user-attachments/assets/5f289230-d2f9-45aa-aeb0-77754a025175)
